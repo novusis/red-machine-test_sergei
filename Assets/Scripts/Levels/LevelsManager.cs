@@ -1,4 +1,6 @@
+using Camera;
 using Events;
+using UnityEngine;
 using Utils.Scenes;
 using Utils.Singleton;
 
@@ -21,6 +23,7 @@ namespace Levels
         private void OnTargetColorNodesFilled(EventModels.Game.TargetColorNodesFilled e)
         {
             _currentLevelIndex += 1;
+            CameraController.Instance.MoveTo(Vector2.zero);
             ScenesChanger.GotoScene(string.Format(LevelNamePattern, _currentLevelIndex));
         }
     }

@@ -1,4 +1,3 @@
-using System;
 using Connection;
 using Events;
 using Player.ActionHandlers;
@@ -10,31 +9,33 @@ namespace Levels
     {
         [SerializeField] private ColorConnectionManager colorConnectionManager;
         
-        private ClickHandler _clickHandler;
+        private InputHandler _inputHandler;
 
         private void Awake()
         {
-            _clickHandler = ClickHandler.Instance;
+            _inputHandler = InputHandler.Instance;
             
-            _clickHandler.PointerDownEvent += OnPointerDown;
-            _clickHandler.PointerUpEvent += OnPointerUp;
+            _inputHandler.PointerDownEvent += OnPointerDown;
+            _inputHandler.PointerUpEvent += OnPointerUp;
         }
 
         private void OnDestroy()
         {
-            _clickHandler.PointerDownEvent -= OnPointerDown;
-            _clickHandler.PointerUpEvent -= OnPointerUp;
+            _inputHandler.PointerDownEvent -= OnPointerDown;
+            _inputHandler.PointerUpEvent -= OnPointerUp;
         }
         
-        private void OnPointerDown(Vector3 position)
+        private void OnPointerDown(Vector2 position)
         {
             colorConnectionManager.TryGetColorNodeInPosition(position, out var node);
             
             if (node != null)
                 EventsController.Fire(new EventModels.Game.NodeTapped());
+            else
+                EventsController.Fire(new EventModels.Game.WorldTapped());
         }
         
-        private void OnPointerUp(Vector3 position)
+        private void OnPointerUp(Vector2 position)
         {
             EventsController.Fire(new EventModels.Game.PlayerFingerRemoved());
         }

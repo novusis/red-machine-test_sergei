@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Camera;
 using Events;
 using Player;
 using Player.ActionHandlers;
@@ -13,8 +14,8 @@ namespace Connection
         [SerializeField] private GameObject colorNodesContainer;
         [SerializeField] private ColorConnector colorConnector;
 
-        private ClickHandler _clickHandler;
-        
+        private InputHandler _inputHandler;
+
         private readonly ColorConnectionHistoryHandler _historyHandler = new();
 
         private ColorNode[] _nodes;
@@ -30,6 +31,8 @@ namespace Connection
         {
             _nodes = colorNodesContainer.GetComponentsInChildren<ColorNode>();
 
+            CalculateCameraLimits();
+
             var nodeTargets = colorNodesContainer.GetComponentsInChildren<ColorNodeTarget>(true);
             foreach (var nodeTarget in nodeTargets)
             {
@@ -37,13 +40,28 @@ namespace Connection
                 _completionsByTargetNode[nodeTarget] = nodeTarget.IsCompleted;
             }
 
-            _clickHandler = ClickHandler.Instance;
-            _clickHandler.SetDragEventHandlers(OnDragStart, OnDragEnd);
+            _inputHandler = InputHandler.Instance;
+            _inputHandler.SetDragEventHandlers(OnDragStart, OnDragEnd);
         }
 
         private void OnDestroy()
         {
-            _clickHandler.ClearEvents();
+            _inputHandler.ClearEvents(OnDragStart, OnDragEnd);
+        }
+
+        private void CalculateCameraLimits()
+        {
+            var cameraLimits = new Rect();
+            foreach (var node in _nodes)
+            {
+                var nodePosition = node.transform.position;
+                cameraLimits.x = Mathf.Min(cameraLimits.x, nodePosition.x);
+                cameraLimits.y = Mathf.Min(cameraLimits.y, nodePosition.y);
+                cameraLimits.width = Mathf.Max(cameraLimits.width, Mathf.Abs(cameraLimits.x - nodePosition.x));
+                cameraLimits.height = Mathf.Max(cameraLimits.y, Mathf.Abs(cameraLimits.y - nodePosition.y));
+            }
+
+            CameraController.Instance.SetLimits(cameraLimits);
         }
 
         private void StartConnecting(ColorNode colorNode)
@@ -113,7 +131,7 @@ namespace Connection
             _connectionsFromColorNode[mainColorNode].Remove(targetColorNode);
         }
 
-        private void OnDragStart(Vector3 startPosition)
+        private void OnDragStart(Vector2 startPosition)
         {
             if (PlayerController.PlayerState != PlayerState.Connecting)
                 return;
@@ -122,12 +140,12 @@ namespace Connection
                 StartConnecting(colorNode);
         }
 
-        private void OnDragEnd(Vector3 finishPosition)
+        private void OnDragEnd(Vector2 finishPosition)
         {
             if (PlayerController.PlayerState != PlayerState.Connecting)
                 return;
 
-            if (_currentColorConnector == null)
+            if (_currentConnectionMainNode == null || _currentColorConnector == null)
                 return;
 
             if (TryGetColorNodeInPosition(finishPosition, out var colorNode) &&

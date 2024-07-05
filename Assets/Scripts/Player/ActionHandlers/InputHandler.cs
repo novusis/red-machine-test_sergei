@@ -1,45 +1,50 @@
 using System;
 using Camera;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using Utils.Singleton;
 
 
 namespace Player.ActionHandlers
 {
-    public class ClickHandler : DontDestroyMonoBehaviourSingleton<ClickHandler>
+    public class InputHandler : DontDestroyMonoBehaviourSingleton<InputHandler>
     {
         [SerializeField] private float clickToDragDuration;
 
-        public event Action<Vector3> PointerDownEvent;
-        public event Action<Vector3> ClickEvent;
-        public event Action<Vector3> PointerUpEvent;
-        public event Action<Vector3> DragStartEvent;
-        public event Action<Vector3> DragEndEvent;
+        public event Action<Vector2> PointerDownEvent;
+        public event Action<Vector2> ClickEvent;
+        public event Action<Vector2> PointerUpEvent;
+        public event Action<Vector2> DragStartEvent;
+        public event Action<Vector2> DragEndEvent;
 
-        private Vector3 _pointerDownPosition;
+        private Vector2 _pointerDownPosition;
 
         private bool _isClick;
         private bool _isDrag;
         private float _clickHoldDuration;
 
-
         private void Update()
         {
             if (Input.GetMouseButtonDown(0))
             {
+                if (EventSystem.current.IsPointerOverGameObject())
+                {
+                    return;
+                }
+
                 _isClick = true;
                 _clickHoldDuration = .0f;
 
-                _pointerDownPosition = CameraHolder.Instance.MainCamera.ScreenToWorldPoint(Input.mousePosition);
-                
+                _pointerDownPosition = CameraController.Instance.GetInputPosition();
+
                 PointerDownEvent?.Invoke(_pointerDownPosition);
-                
-                _pointerDownPosition = new Vector3(_pointerDownPosition.x, _pointerDownPosition.y, .0f);
+
+                _pointerDownPosition = new Vector2(_pointerDownPosition.x, _pointerDownPosition.y);
             }
             else if (Input.GetMouseButtonUp(0))
             {
-                var pointerUpPosition = CameraHolder.Instance.MainCamera.ScreenToWorldPoint(Input.mousePosition);
-                    
+                var pointerUpPosition = CameraController.Instance.GetInputPosition();
+
                 if (_isDrag)
                 {
                     DragEndEvent?.Invoke(pointerUpPosition);
@@ -50,7 +55,7 @@ namespace Player.ActionHandlers
                 {
                     ClickEvent?.Invoke(pointerUpPosition);
                 }
-                
+
                 PointerUpEvent?.Invoke(pointerUpPosition);
 
                 _isClick = false;
@@ -72,18 +77,18 @@ namespace Player.ActionHandlers
             }
         }
 
-        public void SetDragEventHandlers(Action<Vector3> dragStartEvent, Action<Vector3> dragEndEvent)
+        public void SetDragEventHandlers(Action<Vector2> dragStartEvent, Action<Vector2> dragEndEvent)
         {
-            ClearEvents();
+            ClearEvents(dragStartEvent, dragEndEvent);
 
-            DragStartEvent = dragStartEvent;
-            DragEndEvent = dragEndEvent;
+            DragStartEvent += dragStartEvent;
+            DragEndEvent += dragEndEvent;
         }
 
-        public void ClearEvents()
+        public void ClearEvents(Action<Vector2> dragStartEvent, Action<Vector2> dragEndEvent)
         {
-            DragStartEvent = null;
-            DragEndEvent = null;
+            DragStartEvent -= dragStartEvent;
+            DragEndEvent -= dragEndEvent;
         }
     }
 }

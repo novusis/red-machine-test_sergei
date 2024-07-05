@@ -39,7 +39,7 @@ namespace Connection
             if (!_isConnecting)
                 return;
 
-            UpdateParameters(CameraHolder.Instance.MainCamera.ScreenToWorldPoint(Input.mousePosition));
+            UpdateParameters(CameraController.Instance.MainCamera.ScreenToWorldPoint(Input.mousePosition));
         }
 
         private void UpdateGeometry()
@@ -66,7 +66,7 @@ namespace Connection
             _isConnecting = true;
 
             lineSpriteRenderer.color = color;
-            UpdateParameters(CameraHolder.Instance.MainCamera.ScreenToWorldPoint(Input.mousePosition));
+            UpdateParameters(CameraController.Instance.GetInputPosition());
         }
 
         public void FinishConnecting(Vector2 finishPosition)
